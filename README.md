@@ -1,1 +1,1 @@
-# space_rag_app
+# NASA RAG assistant

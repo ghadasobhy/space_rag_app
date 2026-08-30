@@ -81,7 +81,7 @@ RETRIEVER_LAMBDA_MULT: Final[float] = 0.5  # diversity/relevance trade-off for M
 # LLM — Groq (free) as default, OpenAI as fallback
 # --------------------------------------------------------------------------- #
 DEFAULT_LLM_PROVIDER: Final[str] = "groq"   # "groq" or "openai"
-DEFAULT_LLM_MODEL: Final[str] = "llama-3.1-8b-instant"   # Groq model (replaces deprecated llama3-8b-8192)
+DEFAULT_LLM_MODEL: Final[str] = "gemma2-9b-it"   # Groq model — stable free tier
 DEFAULT_LLM_TEMPERATURE: Final[float] = 0.0
 
 

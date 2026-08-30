@@ -10,6 +10,9 @@ langchain-huggingface>=0.1.0
 langchain-openai>=0.2.0
 
 # Embeddings backend
+# Use a lightweight torch install (CPU only) to avoid torchvision dependency
+# errors on Streamlit Cloud.
+torch>=2.0.0
 sentence-transformers>=3.0.0
 
 # Vector store

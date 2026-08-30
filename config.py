@@ -78,9 +78,10 @@ RETRIEVER_FETCH_K: Final[int] = 10
 RETRIEVER_LAMBDA_MULT: Final[float] = 0.5  # diversity/relevance trade-off for MMR
 
 # --------------------------------------------------------------------------- #
-# LLM
+# LLM — Groq (free) as default, OpenAI as fallback
 # --------------------------------------------------------------------------- #
-DEFAULT_LLM_MODEL: Final[str] = "gpt-4o-mini"
+DEFAULT_LLM_PROVIDER: Final[str] = "groq"   # "groq" or "openai"
+DEFAULT_LLM_MODEL: Final[str] = "llama-3.1-8b-instant"   # Groq model
 DEFAULT_LLM_TEMPERATURE: Final[float] = 0.0
 
 
@@ -100,9 +101,15 @@ class Settings:
     openai_api_key: str = field(
         default_factory=lambda: os.getenv("OPENAI_API_KEY", "")
     )
+    groq_api_key: str = field(
+        default_factory=lambda: os.getenv("GROQ_API_KEY", "")
+    )
 
     def with_overrides(
-        self, nasa_api_key: str | None = None, openai_api_key: str | None = None
+        self,
+        nasa_api_key: str | None = None,
+        openai_api_key: str | None = None,
+        groq_api_key: str | None = None,
     ) -> "Settings":
         """Return a new Settings object with any provided values overridden."""
         return Settings(
@@ -110,6 +117,7 @@ class Settings:
             openai_api_key=(
                 openai_api_key.strip() if openai_api_key else self.openai_api_key
             ),
+            groq_api_key=groq_api_key.strip() if groq_api_key else self.groq_api_key,
         )
 
 

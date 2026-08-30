@@ -74,13 +74,21 @@ def render_sidebar() -> Dict[str, Any]:
         help="Get a free key at https://api.nasa.gov. Leave blank to use the "
         "key already set in Streamlit Secrets or your .env file.",
     )
-    openai_key_input = st.sidebar.text_input(
-        "OpenAI API Key",
+    groq_key_input = st.sidebar.text_input(
+        "Groq API Key (free)",
         value="",
         placeholder="Leave blank to use secret / env var",
         type="password",
-        help="Used by the RAG chain's LLM. Leave blank to use the key already "
-        "set in Streamlit Secrets or your .env file.",
+        help="Free LLM via Groq — get a key at https://console.groq.com. "
+        "Leave blank to use the key set in Streamlit Secrets.",
+    )
+    openai_key_input = st.sidebar.text_input(
+        "OpenAI API Key (optional fallback)",
+        value="",
+        placeholder="Leave blank to use secret / env var",
+        type="password",
+        help="Optional — only used if no Groq key is available. "
+        "Leave blank to use the key set in Streamlit Secrets.",
     )
 
     st.sidebar.divider()
@@ -114,11 +122,23 @@ def render_sidebar() -> Dict[str, Any]:
         "Built with LangChain, FAISS, HuggingFace embeddings, and Streamlit."
     )
 
+    resolved_groq = groq_key_input.strip() if groq_key_input.strip() else settings.groq_api_key
+    resolved_openai = openai_key_input.strip() if openai_key_input.strip() else settings.openai_api_key
+
+    # Pick the active LLM key: prefer Groq, fall back to OpenAI.
+    if resolved_groq:
+        active_llm_key = resolved_groq
+        active_llm_provider = "groq"
+    else:
+        active_llm_key = resolved_openai
+        active_llm_provider = "openai"
+
     return {
-        # If the user typed a key in the field, use it; otherwise fall back to
-        # the value already loaded from Streamlit Secrets / .env by get_settings().
         "nasa_api_key": nasa_key_input.strip() if nasa_key_input.strip() else settings.nasa_api_key,
-        "openai_api_key": openai_key_input.strip() if openai_key_input.strip() else settings.openai_api_key,
+        "openai_api_key": resolved_openai,
+        "groq_api_key": resolved_groq,
+        "llm_api_key": active_llm_key,
+        "llm_provider": active_llm_provider,
         "apod_days": apod_days,
         "mars_sol": mars_sol,
         "neows_days": neows_days,
@@ -169,12 +189,13 @@ def run_refresh(config: Dict[str, Any]) -> None:
     st.session_state["num_chunks"] = len(pipeline_result["chunks"])
     st.session_state["last_refresh_ts"] = time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime())
 
-    # Rebuild the RAG chain against the fresh index if an OpenAI key is set.
-    if config["openai_api_key"]:
+    # Rebuild the RAG chain against the fresh index if an LLM key is set.
+    if config["llm_api_key"]:
         try:
             st.session_state["rag_chain"] = build_rag_chain(
                 vector_store=pipeline_result["vector_store"],
-                openai_api_key=config["openai_api_key"],
+                api_key=config["llm_api_key"],
+                provider=config["llm_provider"],
             )
         except Exception as exc:
             st.warning(f"Index built, but RAG chain setup failed: {exc}")
@@ -205,10 +226,10 @@ def render_chat_tab(config: Dict[str, Any]) -> None:
         )
         return
 
-    if not config["openai_api_key"]:
+    if not config["llm_api_key"]:
         st.warning(
-            "Enter an OpenAI API key in the sidebar to enable answer generation. "
-            "You can still explore the Data Feed and Vector DB tabs without one."
+            "Enter a Groq API key (free) in the sidebar to enable answer generation. "
+            "Get one at https://console.groq.com — takes 1 minute."
         )
         return
 
@@ -216,7 +237,8 @@ def render_chat_tab(config: Dict[str, Any]) -> None:
         try:
             st.session_state["rag_chain"] = build_rag_chain(
                 vector_store=st.session_state["vector_store"],
-                openai_api_key=config["openai_api_key"],
+                api_key=config["llm_api_key"],
+                provider=config["llm_provider"],
             )
         except Exception as exc:
             st.error(f"Could not initialize the RAG chain: {exc}")

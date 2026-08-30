@@ -18,7 +18,7 @@ Wires together:
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from langchain_community.chat_message_histories import ChatMessageHistory
 from langchain_community.vectorstores import FAISS
@@ -26,10 +26,12 @@ from langchain_core.documents import Document
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.vectorstores import VectorStoreRetriever
+from langchain_groq import ChatGroq
 from langchain_openai import ChatOpenAI
 
 from config import (
     DEFAULT_LLM_MODEL,
+    DEFAULT_LLM_PROVIDER,
     DEFAULT_LLM_TEMPERATURE,
     RETRIEVER_FETCH_K,
     RETRIEVER_K,
@@ -124,28 +126,42 @@ def build_mmr_retriever(
 
 
 # --------------------------------------------------------------------------- #
-# LLM factory
+# LLM factory — supports Groq (free) and OpenAI
 # --------------------------------------------------------------------------- #
 def build_llm(
-    openai_api_key: str,
+    api_key: str,
     model_name: str = DEFAULT_LLM_MODEL,
     temperature: float = DEFAULT_LLM_TEMPERATURE,
-) -> ChatOpenAI:
+    provider: str = DEFAULT_LLM_PROVIDER,
+) -> Union[ChatGroq, ChatOpenAI]:
     """
     Instantiate the chat LLM used for answer generation.
 
-    Temperature defaults to 0.0 to maximize determinism/faithfulness to the
-    retrieved context, consistent with the "grounded only" requirement.
+    Supports Groq (free, fast LLaMA models) and OpenAI.
+    Temperature defaults to 0.0 for maximal faithfulness to retrieved context.
+
+    Parameters
+    ----------
+    api_key : str
+        Groq API key (if provider='groq') or OpenAI API key (if provider='openai').
+    provider : str
+        'groq' or 'openai'.
     """
-    if not openai_api_key:
+    if not api_key:
         raise ValueError(
-            "An OpenAI API key is required to build the LLM. "
-            "Set it in the Streamlit sidebar or the OPENAI_API_KEY env var."
+            f"A {'Groq' if provider == 'groq' else 'OpenAI'} API key is required. "
+            "Set it in the Streamlit sidebar or the corresponding env var."
+        )
+    if provider == "groq":
+        return ChatGroq(
+            model=model_name,
+            temperature=temperature,
+            api_key=api_key,
         )
     return ChatOpenAI(
         model=model_name,
         temperature=temperature,
-        api_key=openai_api_key,
+        api_key=api_key,
     )
 
 
@@ -209,15 +225,16 @@ class NasaRAGChain:
     def __init__(
         self,
         vector_store: FAISS,
-        openai_api_key: str,
+        api_key: str,
         llm_model: str = DEFAULT_LLM_MODEL,
         temperature: float = DEFAULT_LLM_TEMPERATURE,
+        provider: str = DEFAULT_LLM_PROVIDER,
         k: int = RETRIEVER_K,
         fetch_k: int = RETRIEVER_FETCH_K,
         memory_window: int = MEMORY_WINDOW,
     ) -> None:
         self.retriever = build_mmr_retriever(vector_store, k=k, fetch_k=fetch_k)
-        self.llm = build_llm(openai_api_key, model_name=llm_model, temperature=temperature)
+        self.llm = build_llm(api_key, model_name=llm_model, temperature=temperature, provider=provider)
         self.prompt = build_prompt_template()
         self.memory = ChatMessageHistory()
         self.memory_window = memory_window
@@ -318,9 +335,10 @@ class NasaRAGChain:
 
 def build_rag_chain(
     vector_store: FAISS,
-    openai_api_key: str,
+    api_key: str,
     llm_model: str = DEFAULT_LLM_MODEL,
     temperature: float = DEFAULT_LLM_TEMPERATURE,
+    provider: str = DEFAULT_LLM_PROVIDER,
     k: int = RETRIEVER_K,
     fetch_k: int = RETRIEVER_FETCH_K,
     memory_window: int = MEMORY_WINDOW,
@@ -328,9 +346,10 @@ def build_rag_chain(
     """Factory function to construct a ready-to-use `NasaRAGChain`."""
     return NasaRAGChain(
         vector_store=vector_store,
-        openai_api_key=openai_api_key,
+        api_key=api_key,
         llm_model=llm_model,
         temperature=temperature,
+        provider=provider,
         k=k,
         fetch_k=fetch_k,
         memory_window=memory_window,

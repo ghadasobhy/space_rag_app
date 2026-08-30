@@ -24,7 +24,7 @@ from typing import Any, Dict, List, Optional
 
 from langchain_community.vectorstores import FAISS
 from langchain_core.documents import Document
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_openai import OpenAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from config import (
@@ -140,28 +140,24 @@ def split_documents(
 # --------------------------------------------------------------------------- #
 # Step 3 & 4: Embeddings + FAISS vector store
 # --------------------------------------------------------------------------- #
-def get_embedding_model(model_name: str = EMBEDDING_MODEL_NAME) -> HuggingFaceEmbeddings:
+def get_embedding_model(model_name: str = EMBEDDING_MODEL_NAME) -> OpenAIEmbeddings:
     """
-    Instantiate the local HuggingFace sentence-transformers embedding model.
+    Instantiate the OpenAI embeddings model.
 
-    Running locally (CPU by default) avoids any dependency on an external
-    embeddings API and keeps the pipeline fully self-contained.
+    Uses the OpenAI API (key loaded from env/Streamlit Secrets) so there is
+    no local torch/torchvision dependency on the deployment server.
 
     Returns
     -------
-    HuggingFaceEmbeddings
+    OpenAIEmbeddings
         Configured embedding model wrapper.
     """
-    return HuggingFaceEmbeddings(
-        model_name=model_name,
-        model_kwargs={"device": "cpu"},
-        encode_kwargs={"normalize_embeddings": True},
-    )
+    return OpenAIEmbeddings(model=model_name)
 
 
 def build_faiss_index(
     chunks: List[Document],
-    embedding_model: Optional[HuggingFaceEmbeddings] = None,
+    embedding_model: Optional[OpenAIEmbeddings] = None,
 ) -> FAISS:
     """
     Build a fresh in-memory FAISS vector store from document chunks.
@@ -202,7 +198,7 @@ def persist_faiss_index(vector_store: FAISS, directory: str = FAISS_INDEX_DIR) -
 
 def load_faiss_index(
     directory: str = FAISS_INDEX_DIR,
-    embedding_model: Optional[HuggingFaceEmbeddings] = None,
+    embedding_model: Optional[OpenAIEmbeddings] = None,
 ) -> Optional[FAISS]:
     """
     Load a previously persisted FAISS index from disk, if one exists.

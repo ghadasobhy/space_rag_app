@@ -66,7 +66,7 @@ CHUNK_OVERLAP: Final[int] = 150
 # --------------------------------------------------------------------------- #
 # Embeddings / vector store
 # --------------------------------------------------------------------------- #
-EMBEDDING_MODEL_NAME: Final[str] = "sentence-transformers/all-MiniLM-L6-v2"
+EMBEDDING_MODEL_NAME: Final[str] = "text-embedding-3-small"
 FAISS_INDEX_DIR: Final[str] = "faiss_index"
 
 # --------------------------------------------------------------------------- #

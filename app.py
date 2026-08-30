@@ -63,18 +63,24 @@ def render_sidebar() -> Dict[str, Any]:
 
     settings = get_settings()
 
+    # Fields are intentionally left blank — keys are loaded from Streamlit
+    # Secrets / environment variables automatically via config.get_settings().
+    # Entering a value here overrides the env key for this session only.
     nasa_key_input = st.sidebar.text_input(
         "NASA API Key",
-        value=settings.nasa_api_key,
+        value="",
+        placeholder="Leave blank to use secret / env var",
         type="password",
-        help="Get a free key at https://api.nasa.gov. Defaults to the shared "
-        "'DEMO_KEY' (heavily rate-limited).",
+        help="Get a free key at https://api.nasa.gov. Leave blank to use the "
+        "key already set in Streamlit Secrets or your .env file.",
     )
     openai_key_input = st.sidebar.text_input(
         "OpenAI API Key",
-        value=settings.openai_api_key,
+        value="",
+        placeholder="Leave blank to use secret / env var",
         type="password",
-        help="Used by the RAG chain's LLM to generate grounded answers.",
+        help="Used by the RAG chain's LLM. Leave blank to use the key already "
+        "set in Streamlit Secrets or your .env file.",
     )
 
     st.sidebar.divider()
@@ -109,8 +115,10 @@ def render_sidebar() -> Dict[str, Any]:
     )
 
     return {
-        "nasa_api_key": nasa_key_input.strip() if nasa_key_input else "DEMO_KEY",
-        "openai_api_key": openai_key_input.strip(),
+        # If the user typed a key in the field, use it; otherwise fall back to
+        # the value already loaded from Streamlit Secrets / .env by get_settings().
+        "nasa_api_key": nasa_key_input.strip() if nasa_key_input.strip() else settings.nasa_api_key,
+        "openai_api_key": openai_key_input.strip() if openai_key_input.strip() else settings.openai_api_key,
         "apod_days": apod_days,
         "mars_sol": mars_sol,
         "neows_days": neows_days,

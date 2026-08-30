@@ -24,7 +24,7 @@ from typing import Any, Dict, List, Optional
 
 from langchain_community.vectorstores import FAISS
 from langchain_core.documents import Document
-from langchain_openai import OpenAIEmbeddings
+from langchain_huggingface import HuggingFaceEndpointEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from config import (
@@ -32,6 +32,7 @@ from config import (
     CHUNK_SIZE,
     EMBEDDING_MODEL_NAME,
     FAISS_INDEX_DIR,
+    HF_API_TOKEN,
 )
 
 logger = logging.getLogger(__name__)
@@ -140,24 +141,27 @@ def split_documents(
 # --------------------------------------------------------------------------- #
 # Step 3 & 4: Embeddings + FAISS vector store
 # --------------------------------------------------------------------------- #
-def get_embedding_model(model_name: str = EMBEDDING_MODEL_NAME) -> OpenAIEmbeddings:
+def get_embedding_model(model_name: str = EMBEDDING_MODEL_NAME) -> HuggingFaceEndpointEmbeddings:
     """
-    Instantiate the OpenAI embeddings model.
+    Instantiate the HuggingFace Inference API embedding model.
 
-    Uses the OpenAI API (key loaded from env/Streamlit Secrets) so there is
-    no local torch/torchvision dependency on the deployment server.
+    Uses HuggingFace's free Inference API — no local torch/torchvision needed,
+    no cost. Requires a free HF read token (HF_API_TOKEN env var).
 
     Returns
     -------
-    OpenAIEmbeddings
+    HuggingFaceEndpointEmbeddings
         Configured embedding model wrapper.
     """
-    return OpenAIEmbeddings(model=model_name)
+    return HuggingFaceEndpointEmbeddings(
+        model=f"https://api-inference.huggingface.co/pipeline/feature-extraction/{model_name}",
+        huggingfacehub_api_token=HF_API_TOKEN,
+    )
 
 
 def build_faiss_index(
     chunks: List[Document],
-    embedding_model: Optional[OpenAIEmbeddings] = None,
+    embedding_model: Optional[HuggingFaceEndpointEmbeddings] = None,
 ) -> FAISS:
     """
     Build a fresh in-memory FAISS vector store from document chunks.
@@ -198,7 +202,7 @@ def persist_faiss_index(vector_store: FAISS, directory: str = FAISS_INDEX_DIR) -
 
 def load_faiss_index(
     directory: str = FAISS_INDEX_DIR,
-    embedding_model: Optional[OpenAIEmbeddings] = None,
+    embedding_model: Optional[HuggingFaceEndpointEmbeddings] = None,
 ) -> Optional[FAISS]:
     """
     Load a previously persisted FAISS index from disk, if one exists.

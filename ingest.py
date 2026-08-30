@@ -154,7 +154,7 @@ def get_embedding_model(model_name: str = EMBEDDING_MODEL_NAME) -> HuggingFaceEn
         Configured embedding model wrapper.
     """
     return HuggingFaceEndpointEmbeddings(
-        model=f"https://api-inference.huggingface.co/pipeline/feature-extraction/{model_name}",
+        model=model_name,
         huggingfacehub_api_token=HF_API_TOKEN,
     )
 

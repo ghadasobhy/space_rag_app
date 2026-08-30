@@ -66,11 +66,8 @@ CHUNK_OVERLAP: Final[int] = 150
 # --------------------------------------------------------------------------- #
 # Embeddings / vector store
 # --------------------------------------------------------------------------- #
-EMBEDDING_MODEL_NAME: Final[str] = "sentence-transformers/all-MiniLM-L6-v2"
+EMBEDDING_MODEL_NAME: Final[str] = "BAAI/bge-small-en-v1.5"
 FAISS_INDEX_DIR: Final[str] = "faiss_index"
-# HuggingFace Inference API token — free tier is sufficient for embeddings.
-# Get one at https://huggingface.co/settings/tokens (read-only token).
-HF_API_TOKEN: str = os.getenv("HF_API_TOKEN", "")
 
 # --------------------------------------------------------------------------- #
 # Retrieval
